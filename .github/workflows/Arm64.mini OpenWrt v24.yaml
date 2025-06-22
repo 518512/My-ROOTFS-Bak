@@ -8,7 +8,8 @@
 # Description: Build OpenWrt using GitHub Actions
 #
 
-name: Build Arm64.mini OpenWrt v22.03.6
+name: Arm64.mini OpenWrt v24
+
 permissions: write-all
 #开启写权限，防止无法上传到release
 
@@ -21,41 +22,73 @@ on:
         required: false
         default: 'false'
   schedule:
-     - cron: '0 18 * * 5'
+   - cron: '0 18 * * 5'
 
 env:
   REPO_URL: https://github.com/openwrt/openwrt
-  REPO_BRANCH: v22.03.6
+  REPO_BRANCH: main
   FEEDS_CONF: feeds.conf.default.none
-  CONFIG_FILE: OpenWRT/v22.arm64.mini.config
-  CUSTOM_SH: OpenWRT/custom.sh
+  CONFIG_FILE: OpenWRT/v23.arm64.mini.config
+  DIY_P1_SH: OpenWRT/diy-part1.sh
+  DIY_P2_SH: OpenWRT/diy-part2.sh
   UPLOAD_BIN_DIR: false
   UPLOAD_FIRMWARE: true
+  UPLOAD_COWTRANSFER: false
+  UPLOAD_WETRANSFER: false
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
-  FILE_NAME: OP2203_ARM_ROOTFS_mini
-  PRODUCT_NAME: OP2203_ARM_ROOTFS_mini
+  FILE_NAME: OP_SNAPSHOT_ARM_ROOTFS_mini
+  PRODUCT_NAME: ARM64
+  PRODUCT_NAME2: OP_SNAPSHOT_ARM_ROOTFS_mini
   GITHUB_RELEASE: https://github.com/518512/My-ROOTFS
-  DISTRIB_REVISION: OpenWRT 22.03.6
+  DISTRIB_REVISION: OpenWRT Main
   KERNEL_PATCHVER: 无内核，纯LXC ROOTFS
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout
       uses: actions/checkout@main
+      
+    - name: Check server configuration
+      run: |
+        echo "警告⚠"
+        echo "若分配的服务器性能不足，务必及时取消，重新运行！"
+        echo "已知编译成功CPU型号：8370C,8171M"
+        echo "已知性能不足CPU型号：8272CL"
+        echo -e "-------------- ------------CPU信息------------------------------------------\n"
+        echo "CPU物理数量:$(cat /proc/cpuinfo| grep "physical id"| sort| uniq| wc -l)"
+        echo -e "CPU核心及版本信息：$(cat /proc/cpuinfo | grep name | cut -f2 -d: | uniq -c) \n"
+        echo "-------------------------------内存信息-------------------------------------------"
+        echo "已安装内存详细信息："
+        sudo lshw -short -C memory | grep GiB
+        echo -e "\n"
+        echo "-----------------------------硬盘信息---------------------------------------------"
+        echo -e  "硬盘数量：$(ls /dev/sd* | grep -v [1-9] | wc -l) \n"
+        echo "硬盘详情："
+        df -Th
 
     - name: Initialization environment
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc "/usr/local/share/boost" "$AGENT_TOOLSDIRECTORY"
+        docker rmi `docker images -q`
+        sudo -E rm -rf /usr/share/dotnet /etc/mysql /etc/php /etc/apt/sources.list.d /usr/local/lib/android
+        sudo -E apt -y purge azure-cli* docker* ghc* zulu* llvm* firefox google* dotnet* powershell* openjdk* mysql* php* mongodb* dotnet* snap* aspnetcore*
+        [ -n "$AGENT_TOOLSDIRECTORY" ] && sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+        sudo -E apt update
+        sudo -E apt -y install $(curl -fsSL https://is.gd/depends_ubuntu_2204)
+        sudo -E apt -y autoremove --purge
+        sudo -E systemctl daemon-reload
+        sudo -E apt clean
         sudo timedatectl set-timezone "$TZ"
         sudo mkdir -p /workdir
         sudo chown $USER:$GROUPS /workdir
-
+        echo "status=success" >> ${GITHUB_OUTPUT}
+        df -Th
+        
     - name: 缓存加速
       uses: stupidloud/cachewrtbuild@main
       if: env.CACHE_BUILD == 'true' || (github.event.inputs.CACHE_BUILD == 'true')
@@ -80,8 +113,18 @@ jobs:
         df -hT $PWD
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+        cd openwrt
+        useVersionInfo=$(git show -s --date=short --format="Author: %an<br/>date: %cd<br/>commit: %s<br/>commit hash: %H")
+        echo "useVersionInfo=$useVersionInfo" >> $GITHUB_ENV
         echo "DATE=$(date "+%Y-%m-%d %H")" >> $GITHUB_ENV
         echo "DATE1=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
+
+    - name: Load custom feeds
+      run: |
+        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
+        chmod +x $DIY_P1_SH
+        cd openwrt
+        $GITHUB_WORKSPACE/$DIY_P1_SH
 
     - name: Update feeds
       run: cd openwrt && ./scripts/feeds update -a
@@ -92,12 +135,11 @@ jobs:
     - name: Load custom configuration
       run: |
         [ -e files ] && mv files openwrt/files
-        [ -e banner ] && mv banner openwrt/package/base-files/files/etc/banner
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
         cat openwrt/.config  # 确认 .config 文件内容
-        chmod +x $CUSTOM_SH
+        chmod +x $DIY_P2_SH
         cd openwrt
-        $GITHUB_WORKSPACE/$CUSTOM_SH
+        $GITHUB_WORKSPACE/$DIY_P2_SH
 
     - name: SSH connection to Actions
       uses: P3TERX/ssh2actions@v1.0.0
@@ -122,6 +164,7 @@ jobs:
         cd openwrt
         echo -e "$(nproc) thread compile"
         make -j$(nproc) || make -j1 || make -j1 V=s
+        # echo "::set-output name=status::success"
         echo "status=success" >> $GITHUB_OUTPUT
         grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
         [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
@@ -135,10 +178,13 @@ jobs:
         echo "BUILD_TIME=${HOUR}时${MIN}分${SEC}秒" >> $GITHUB_ENV
         echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
         echo "FILE_DATE2=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
-
-    - name: Check space usage
-      if: (!cancelled())
-      run: df -hT
+        
+    - name: Clean up server space
+      if: steps.compile.outputs.status == 'success' && !cancelled()
+      run: |
+        cd openwrt/
+        rm -rf $(ls . | grep -v "^bin$" | xargs) 2>/dev/null
+        df -hT ${PWD}
 
     - name: Upload bin directory
       uses: actions/upload-artifact@main
@@ -154,25 +200,23 @@ jobs:
         cd openwrt/bin/targets/*/*
         rm -rf packages
         rm -rf *.buildinfo
-        rm -rf *.manifest
+        rm -rf profiles.json
         rm -rf sha256sums
-        rm -rf *.bin
-        rm -rf openwrt-armvirt-64-Image
-        rm -rf openwrt-armvirt-64-Image-initramfs
-        rm -rf openwrt-armvirt-64-rootfs-ext4.img.gz
-        rm -rf openwrt-armvirt-64-rootfs-squashfs.img.gz
-        rm -rf openwrt-armvirt-64-rootfs.cpio.gz
-        mv openwrt-armvirt-64-default-rootfs.tar.gz openwrt-22.03${{ env.VERSION }}-armsr-armv8-generic-rootfs-${{ env.FILE_DATE2 }}.tar.gz
+        rm -rf openwrt-armsr-armv8-generic-kernel.bin
+        rm -rf openwrt-armsr-armv8-generic.manifest
+        mv openwrt-armsr-armv8-generic-rootfs.tar.gz openwrt-23.05-${{ env.VERSION }}-armsr-armv8-generic-rootfs-${{ env.FILE_DATE2 }}.tar.gz
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+        # echo "::set-output name=status::success"
         echo "status=success" >> $GITHUB_OUTPUT
+    
 
     - name: Upload firmware directory
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
         path: ${{ env.FIRMWARE }}
-        
+
     #- name: Generate release tag
       #id: tag
       #if: env.UPLOAD_RELEASE == 'true' && !cancelled()
@@ -189,7 +233,7 @@ jobs:
       id: release
       uses: ncipollo/release-action@v1
       with:
-        name: R${{ env.DATE }} for ${{ env.PRODUCT_NAME }}
+        name: R${{ env.DATE1 }} for ${{ env.PRODUCT_NAME2 }}
         allowUpdates: true
         tag: ${{ env.FILE_NAME }}  # 确保 tag 名称有效，去除非法字符和空格
         commit: ${{ github.sha }}  # 使用有效的 commit SHA 值
@@ -198,9 +242,8 @@ jobs:
           **OpenWRT official Mini Firmware for Armvirt/Armsr 64**
           ### 📒 固件信息
           - 🚀 每日：OpenWRT 作者固件 ➦ [xYx-c](https://github.com/xYx-c/build-openwrt/releases) ➦ [Zane-E](https://github.com/Zane-E/ROOTFS/releases) ➦ [217heidai](https://github.com/217heidai/OpenWrt-Builder/releases)
-          - 🚀 随缘：LXC MINI ROOTFS ➦ [OpenWRT](https://github.com/518512/xYx-openwrt/releases) ➦ [LEDE](https://github.com/518512/ROOTFS/releases) ➦ [ImmortalWrt](https://github.com/518512/ROOTFS/releases)即可下载
           - 💻 平台架构: Armvirt/Armsr 64 , 🌐 默认地址: 10.5.2.1 , 🔑 默认密码: password
-          - ⚽ 固件源码: ${{ env.REPO_URL }} , 💝 源码分支: ${{ env.REPO_BRANCH }}（22.03.6）
+          - ⚽ 固件源码: ${{ env.REPO_URL }} , 💝 源码分支: openwrt-22/ 23/ 24
           ### 🧊 固件版本
           - LXC Mini底包，非完整固件，每周五18点自动编译
           - 固件编译前最后一次➦[主源码](${{ env.REPO_URL }})更新记录
@@ -225,7 +268,6 @@ jobs:
         retain_days: 3
         keep_minimum_runs: 3
 
-
     - name: Remove old Releases
       uses: dev-drprasad/delete-older-releases@master
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
@@ -236,7 +278,7 @@ jobs:
         delete_tags: true
       env:
         GITHUB_TOKEN: ${{ secrets.TOKEN3 }}
-    
+
     - name: Telegram notification
       run: |
         curl "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=

@@ -8,7 +8,7 @@
 # Description: Build OpenWrt using GitHub Actions
 #
 
-name: Build Arm64.mini OpenWrt v23.05.3
+name: Arm64.mini OpenWrt v23
 
 permissions: write-all
 #开启写权限，防止无法上传到release
@@ -37,7 +37,8 @@ env:
   UPLOAD_WETRANSFER: false
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
-  FILE_NAME: OP2305_ARM_ROOTFS_mini
+  PRODUCT_NAME: ARM64
+  FILE_NAME2: OP2305_ARM_ROOTFS_mini
   PRODUCT_NAME: OP2305_ARM_ROOTFS_mini
   GITHUB_RELEASE: https://github.com/518512/My-ROOTFS
   DISTRIB_REVISION: OpenWRT Main
@@ -232,7 +233,7 @@ jobs:
       id: release
       uses: ncipollo/release-action@v1
       with:
-        name: R${{ env.DATE }} for ${{ env.PRODUCT_NAME }}
+        name: R${{ env.DATE1 }} for ${{ env.PRODUCT_NAME2 }}
         allowUpdates: true
         tag: ${{ env.FILE_NAME }}  # 确保 tag 名称有效，去除非法字符和空格
         commit: ${{ github.sha }}  # 使用有效的 commit SHA 值
@@ -241,9 +242,8 @@ jobs:
           **OpenWRT official Mini Firmware for Armvirt/Armsr 64**
           ### 📒 固件信息
           - 🚀 每日：OpenWRT 作者固件 ➦ [xYx-c](https://github.com/xYx-c/build-openwrt/releases) ➦ [Zane-E](https://github.com/Zane-E/ROOTFS/releases) ➦ [217heidai](https://github.com/217heidai/OpenWrt-Builder/releases)
-          - 🚀 随缘：LXC MINI ROOTFS ➦ [OpenWRT](https://github.com/518512/xYx-openwrt/releases) ➦ [LEDE](https://github.com/518512/ROOTFS/releases) ➦ [ImmortalWrt](https://github.com/518512/ROOTFS/releases)即可下载
           - 💻 平台架构: Armvirt/Armsr 64 , 🌐 默认地址: 10.5.2.1 , 🔑 默认密码: password
-          - ⚽ 固件源码: ${{ env.REPO_URL }} , 💝 源码分支: ${{ env.REPO_BRANCH }}（23.05.4）
+          - ⚽ 固件源码: ${{ env.REPO_URL }} , 💝 源码分支: openwrt-22/ 23/ 24
           ### 🧊 固件版本
           - LXC Mini底包，非完整固件，每周五18点自动编译
           - 固件编译前最后一次➦[主源码](${{ env.REPO_URL }})更新记录
