@@ -190,7 +190,7 @@ jobs:
       id: release
       uses: ncipollo/release-action@v1
       with:
-        name: R${{ env.DATE1 }} for ${{ env.PRODUCT_NAME2 }}
+        name: R${{ env.DATE1 }} for ${{ env.PRODUCT_NAME }}
         allowUpdates: true
         tag: ${{ env.FILE_NAME }}  # 确保 tag 名称有效，去除非法字符和空格
         commit: ${{ github.sha }}  # 使用有效的 commit SHA 值
