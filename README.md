@@ -1,12 +1,9 @@
 # 简介
 ### 小白一枚，根据各路大神教程，编译自用PVE CT / LXC 模板，Arm&x86_x64版 ROOTFS。
-**OpenWRT v22.03.5/v22.03.6 Fork [xYx-c/build-openwrt](https://github.com/xYx-c/build-openwrt)使用OpenWRT官方源码编译**
+**OpenWRT v22 Fork [xYx-c/build-openwrt](https://github.com/xYx-c/build-openwrt)使用OpenWRT官方源码编译**
   
-**OpenWRT v23.05（main）为缝合产物，搞了两天没搞定，因为同样的配置文件v23.05会编译错误。**
+**OpenWRT v23 / v24 为缝合产物，搞了两天没搞定，因为同样的配置文件v23.05会编译错误。**
 
-**OpenWRT(LEDE) v24.11 Fork [Zane-E/ROOTFS](https://github.com/Zane-E/ROOTFS)使用[LEDE源码](https://github.com/coolsnowwolf/lede)源码编译**
-
-**OpenWRT(ImmortalWrt) v23.05 Fork [217heidai/OpenWrt-Builder](https://github.com/217heidai/OpenWrt-Builder)使用[ImmortalWrt源码](https://github.com/immortalwrt/immortalwrt)源码编译**
   |名称|说明|用户|密码|备选|
   |:----|:----|:----|:----|:----| 
   | IP| 10.5.2.1| root| password| 192.168.1.1|
@@ -14,37 +11,13 @@
 点击下表中 [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?style=flat&logo=hack-the-box)](https://github.com/518512/My-ROOTFS/releases) 即可跳转到该设备固件下载页面
 | 平台+设备名称 | 固件编译状态 | 固件下载 | 测试情况 |
 | :------------- | :------------- | :------------- | :------------- | 
-| [![](https://img.shields.io/badge/OpenWrt-ArmV8_Mini_ROOTFS-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS/actions/workflows/Build%20arm64.mini%20OpenWrt%20v22.03.6.yaml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS/releases) | 待测试 | 
-| [![](https://img.shields.io/badge/OpenWrt-ArmV8_Mini_ROOTFS-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS/actions/workflows/Build%20arm64.mini%20OpenWrt%20v23.05.3.yaml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS/releases) | 待测试 | 
-| [![](https://img.shields.io/badge/OpenWrt-LEDE_ArmV8_Mini_ROOTFS-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS/actions/workflows/LEDE.Armvirt64.mini.ROOTFS.yml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS/releases) | 已测 | 
-| [![](https://img.shields.io/badge/OpenWrt-LEDE_ArmV8_ROOTFS-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS/actions/workflows/LEDE.Armvirt64.ROOTFS.yml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS/releases) | 已测 | 
-| [![](https://img.shields.io/badge/OpenWrt-LEDE_X86_X64_ROOTFS-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS/actions/workflows/LEDE.x86_x64.ROOTFS.yml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS/releases) | 待测试 | 
-| [![](https://img.shields.io/badge/OpenWrt-LEDE_X86_X64_Mini_ROOTFS-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS/actions/workflows/LEDE.x86_x64.mini.ROOTFS.yml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS/releases) | 已测 | 
-| [![](https://img.shields.io/badge/OpenWrt-ImmortalWrt_X86_X64_ROOTFS-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS/actions/workflows/Test-ImmortalWrt-router.yml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS/releases) | 待测试 | 
-| [![](https://img.shields.io/badge/OpenWrt-ImmortalWrt_X86_X64_Mini_ROOTFS-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS/actions/workflows/Test-ImmortalWrt-gateway.yml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS/releases) | 待测试 |
- 
+| [![](https://img.shields.io/badge/OpenWrt-ArmV8_Mini_v24-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini OpenWrt v24.yaml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS-Bak/releases) | 待测试 | 
+| [![](https://img.shields.io/badge/OpenWrt-ArmV8_Mini_v23-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS/actions/workflows/Arm64.mini OpenWrt v23.yaml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS-Bak/releases) | 待测试 | 
+| [![](https://img.shields.io/badge/OpenWrt-ArmV8_Mini_v22-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS/actions/workflows/Arm64.mini OpenWrt v22.yaml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS-Bak/releases) | 已测 | 
+
 - 为什么要有三个版本的OpenWRT？
 - 仅限于就**自身**使用需求来看，ImmortalWrt更适合作为主路由，LEDE更适合旁路网关，或者无IPV6 RA设置需求的。
 - 另外的OpenWRT官方版如**xYx-c所说**很清爽。
-
-## LEDE/ImmortalWrt/OpenWRT Official ARM X86_X64 mini（主力更新）
-> [!TIP]
-> **插件：基础功能、IPV6、Wireguard、SSR Plus+、PW、OC、Argon 主题、AdGuard Home、Mosdns、upnp、ShutDown/关机、SmartDNS**
-
->  **待加入：mosdns（貌似现在不支持LEDE了，https://github.com/sbwml/luci-app-mosdns/issues/252#issuecomment-2336829767 ）**
-
->  **待完成：统一LEDE/ImmortalWrt/OpenWRT Official mini配置文件，但是很懒。PS：只能怪LXC真的太省心，部署完基本不需要维护**
-
-> ~~待解决，直接使用管理界面无法打开，需更改uhttpd注释掉 443 相关的两行。 https://github.com/coolsnowwolf/lede/issues/11546 ！~~
-> > **2024.11.15貌似修复了此问题，采用替换uhttpd配置文件的方式，貌似顺便修复了网口的问题,测试一下。目前只编译了X86_X64版**
-
-## LEDE ARM X86_X64
-> [!TIP]
-> **插件：基础功能、IPV6、Wireguard、SSR Plus+、PW、PW2、OC、Argon 主题、AdGuard Home、Mosdns、upnp、ZeroTier、Turbo ACC、ShutDown/关机、......**
-> > **待解决，直接使用管理界面无法打开，需更改uhttpd注释掉 443 相关的两行。 https://github.com/coolsnowwolf/lede/issues/11546 ！**
-## ImmortalWrt X86_X64
-> [!TIP]
-> **插件：基础功能、IPV6、Wireguard、PW、OC、Argon 主题、Mosdns、upnp、Turbo ACC、ShutDown/关机、USB网卡......**
 
 ## OpenWRT Official - ARM
 > [!TIP]
