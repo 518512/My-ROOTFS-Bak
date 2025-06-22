@@ -28,7 +28,7 @@ env:
   REPO_URL: https://github.com/openwrt/openwrt
   REPO_BRANCH: main
   FEEDS_CONF: feeds.conf.default.none
-  CONFIG_FILE: OpenWRT/v23.arm64.mini.config
+  CONFIG_FILE: OpenWRT/v24.arm64.mini.AI-fix.config
   DIY_P1_SH: OpenWRT/diy-part1.sh
   DIY_P2_SH: OpenWRT/diy-part2.sh
   UPLOAD_BIN_DIR: false
