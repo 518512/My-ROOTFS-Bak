@@ -27,7 +27,7 @@ env:
   REPO_URL: https://github.com/openwrt/openwrt
   REPO_BRANCH: openwrt-24.10
   REPO_BRANCH_23: openwrt-23.05
-  REPO_BRANCH_22: v22.03.6
+  REPO_BRANCH_22: openwrt-22.03
   FEEDS_CONF: feeds.conf.default.none
   CONFIG_FILE: OpenWRT/x86_x64/v23.x64.mini.config
   CUSTOM_SH: OpenWRT/custom.sh
