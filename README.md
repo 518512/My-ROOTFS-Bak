@@ -9,7 +9,7 @@
   | IP| 10.5.2.1| root| password| 192.168.1.1|
 ## 固件下载 [![](https://img.shields.io/badge/-编译状态及下载链接-FFFFFF.svg)](#固件下载-)
 点击下表中 [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?style=flat&logo=hack-the-box)](https://github.com/518512/My-ROOTFS/releases) 即可跳转到该设备固件下载页面
-| 平台+设备名称 | 固件编译状态 | 固件下载 | 测试情况 |
+| 平台+设备名称 | 固件编译状态 | 固件下载 |
 | :------------- | :------------- | :------------- | :------------- | 
 | [![](https://img.shields.io/badge/OpenWrt-ArmV8_Mini_v24-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v24.yaml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS-Bak/releases) |
 | [![](https://img.shields.io/badge/OpenWrt-ArmV8_Mini_v23-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v23.yaml/badge.svg)](#)、[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v22.yaml/badge.svg)](#) 、[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v24.yaml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS-Bak/releases) |
