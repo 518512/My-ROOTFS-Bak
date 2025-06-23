@@ -5,7 +5,7 @@
 **OpenWRT v23 / v24 为缝合产物，搞了两天没搞定，因为同样的配置文件v23.05会编译错误。**
 
   |名称|说明|用户|密码|备选|
-  |:----|:----|:----|:----|
+  |:----|:----|:----|:----|:----|
   | IP| 10.5.2.1| root| password| 192.168.1.1|
 ## 固件下载 [![](https://img.shields.io/badge/-编译状态及下载链接-FFFFFF.svg)](#固件下载-)
 点击下表中 [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?style=flat&logo=hack-the-box)](https://github.com/518512/My-ROOTFS/releases) 即可跳转到该设备固件下载页面
