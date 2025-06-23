@@ -5,15 +5,15 @@
 **OpenWRT v23 / v24 为缝合产物，搞了两天没搞定，因为同样的配置文件v23.05会编译错误。**
 
   |名称|说明|用户|密码|备选|
-  |:----|:----|:----|:----|:----| 
+  |:----|:----|:----|:----|
   | IP| 10.5.2.1| root| password| 192.168.1.1|
 ## 固件下载 [![](https://img.shields.io/badge/-编译状态及下载链接-FFFFFF.svg)](#固件下载-)
 点击下表中 [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?style=flat&logo=hack-the-box)](https://github.com/518512/My-ROOTFS/releases) 即可跳转到该设备固件下载页面
 | 平台+设备名称 | 固件编译状态 | 固件下载 | 测试情况 |
 | :------------- | :------------- | :------------- | :------------- | 
-| [![](https://img.shields.io/badge/OpenWrt-ArmV8_Mini_v24-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v24.yaml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS-Bak/releases) | 待测试 | 
-| [![](https://img.shields.io/badge/OpenWrt-ArmV8_Mini_v23-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v23.yaml/badge.svg)](#)、[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v23.yaml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS-Bak/releases) | 待测试 | 
-| [![](https://img.shields.io/badge/OpenWrt-ArmV8_Mini_v22-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v22.yaml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS-Bak/releases) | 已测 | 
+| [![](https://img.shields.io/badge/OpenWrt-ArmV8_Mini_v24-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v24.yaml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS-Bak/releases) |
+| [![](https://img.shields.io/badge/OpenWrt-ArmV8_Mini_v23-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v23.yaml/badge.svg)](#)、[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v22.yaml/badge.svg)](#) 、[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v24.yaml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS-Bak/releases) |
+| [![](https://img.shields.io/badge/OpenWrt-ArmV8_Mini_v22-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v22.yaml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS-Bak/releases) |
 
 - 为什么要有三个版本的OpenWRT？
 - 仅限于就**自身**使用需求来看，ImmortalWrt更适合作为主路由，LEDE更适合旁路网关，或者无IPV6 RA设置需求的。
