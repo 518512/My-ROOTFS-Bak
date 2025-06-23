@@ -1,6 +1,6 @@
 # 简介
 ### 小白一枚，根据各路大神教程，编译自用PVE CT / LXC 模板，Arm&x86_x64版 ROOTFS。
-**OpenWRT v22 Fork [xYx-c/build-openwrt](https://github.com/xYx-c/build-openwrt)使用OpenWRT官方源码编译**
+**OpenWRT v22 Fork [xYx-c/build-openwrt](https://github.com/xYx-c/build-openwrt)，使用OpenWRT官方源码编译**
   
 **OpenWRT v23 / v24 为缝合产物，搞了两天没搞定，因为同样的配置文件v23.05会编译错误。**
 
