@@ -8,7 +8,7 @@
 # Description: Build OpenWrt using GitHub Actions
 #
 
-name: Arm64 OpenWrt v22
+name: Arm OpenWrt v22
 permissions: write-all
 #开启写权限，防止无法上传到release
 
