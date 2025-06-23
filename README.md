@@ -11,7 +11,7 @@
 点击下表中 [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?style=flat&logo=hack-the-box)](https://github.com/518512/My-ROOTFS/releases) 即可跳转到该设备固件下载页面
 | 平台+设备名称 | 固件编译状态 | 固件下载 |
 | :------------- | :------------- | :------------- |
-| [![](https://img.shields.io/badge/OpenWrt-ArmV8-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v23.yaml/badge.svg)](#)[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v22.yaml/badge.svg)](#) [![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v24.yaml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-链接-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS-Bak/releases) |
+| [![](https://img.shields.io/badge/OpenWrt-ArmV8-32C955.svg?logo=openwrt)](#) |[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v23.yaml/badge.svg)](#)[![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v22.yaml/badge.svg)](#) [![](https://github.com/518512/My-ROOTFS-Bak/actions/workflows/Arm64.mini%20OpenWrt%20v24.yaml/badge.svg)](#) | [![](https://img.shields.io/badge/下载-blueviolet.svg?logo=hack-the-box)](https://github.com/518512/My-ROOTFS-Bak/releases) |
 
 - 为什么要有三个版本的OpenWRT？
 - 仅限于就**自身**使用需求来看，ImmortalWrt更适合作为主路由，LEDE更适合旁路网关，或者无IPV6 RA设置需求的。
