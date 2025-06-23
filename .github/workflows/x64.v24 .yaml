@@ -8,7 +8,7 @@
 # Description: Build OpenWrt using GitHub Actions
 #
 
-name: X64 OpenWrt v22
+name: X64 OpenWrt v24
 permissions: write-all
 #开启写权限，防止无法上传到release
 
@@ -25,19 +25,21 @@ on:
 
 env:
   REPO_URL: https://github.com/openwrt/openwrt
-  REPO_BRANCH: v22.03.6
+  REPO_BRANCH: openwrt-24.10
+  REPO_BRANCH_23: openwrt-23.05
+  REPO_BRANCH_22: v22.03.6
   FEEDS_CONF: feeds.conf.default.none
-  CONFIG_FILE: OpenWRT/x86_x64/v22.x64.mini.config
+  CONFIG_FILE: OpenWRT/x86_x64/v23.x64.mini.config
   CUSTOM_SH: OpenWRT/custom.sh
   UPLOAD_BIN_DIR: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
-  FILE_NAME: OP2203_X64_ROOTFS_mini
+  FILE_NAME: OP2410_X64_ROOTFS_mini
   PRODUCT_NAME: X86_X64
-  PRODUCT_NAME2: OP2203_X64_ROOTFS_mini
+  PRODUCT_NAME2: OP2410_X64_ROOTFS_mini
   GITHUB_RELEASE: https://g3s0.short.gy/OpenWRT
-  DISTRIB_REVISION: OpenWRT 22.03.6
+  DISTRIB_REVISION: OpenWRT 24.10
   KERNEL_PATCHVER: 无内核，纯LXC ROOTFS
 
 jobs:
@@ -78,7 +80,29 @@ jobs:
     - name: Clone source code
       working-directory: /workdir
       run: |
-        df -hT $PWD
+        # 克隆 openwrt23 分支并提取版本信息
+        git clone $REPO_URL -b $REPO_BRANCH_23 openwrt23
+        ln -sf /workdir/openwrt23 $GITHUB_WORKSPACE/openwrt23
+        pushd openwrt23
+        useVersionInfo23=$(git show -s --date=short --format="Author: %an<br/>date: %cd<br/>commit: %s<br/>commit hash: %H")
+        popd
+        echo "useVersionInfo23=$useVersionInfo23" >> $GITHUB_ENV
+
+        # 克隆 openwrt22 分支并提取版本信息
+        git clone $REPO_URL -b $REPO_BRANCH_22 openwrt22
+        ln -sf /workdir/openwrt22 $GITHUB_WORKSPACE/openwrt22
+        pushd openwrt22
+        useVersionInfo22=$(git show -s --date=short --format="Author: %an<br/>date: %cd<br/>commit: %s<br/>commit hash: %H")
+        popd
+        echo "useVersionInfo22=$useVersionInfo22" >> $GITHUB_ENV
+
+        # 可选：列目录确认
+        ls
+
+        # 如果不再需要旧源码可清理（建议放在流程末尾或编译后）
+        rm -rf openwrt23
+        rm -rf openwrt22
+        
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
         echo "DATE=$(date "+%Y-%m-%d %H")" >> $GITHUB_ENV
@@ -166,7 +190,7 @@ jobs:
         rm -rf openwrt-x86-64-generic-ext4-combined.img.gz
         rm -rf openwrt-x86-64-generic-ext4-rootfs.img.gz
         rm -rf openwrt-x86-64-generic-squashfs-combined.img.gz
-        mv openwrt-x86-64-generic-rootfs.tar.gz openwrt-22.03${{ env.VERSION }}-x86-64-generic-rootfs-${{ env.FILE_DATE2 }}.tar.gz
+        mv openwrt-x86-64-generic-rootfs.tar.gz openwrt-24.10${{ env.VERSION }}-x86-64-generic-rootfs-${{ env.FILE_DATE2 }}.tar.gz
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
@@ -208,6 +232,10 @@ jobs:
           - LXC Mini底包，非完整固件，每周五18点自动编译
           - 固件编译前最后一次➦[主源码](${{ env.REPO_URL }})更新记录
           ${{ env.useVersionInfo }}
+          - v23
+          ${{ env.useVersionInfo23 }}
+          - v22
+          ${{ env.useVersionInfo22 }}
         artifacts: ${{ env.FIRMWARE }}/*
         
     #- name: Upload firmware to release

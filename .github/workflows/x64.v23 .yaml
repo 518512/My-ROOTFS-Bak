@@ -8,7 +8,7 @@
 # Description: Build OpenWrt using GitHub Actions
 #
 
-name: X64 OpenWrt v22
+name: X64 OpenWrt v23
 permissions: write-all
 #开启写权限，防止无法上传到release
 
@@ -25,19 +25,19 @@ on:
 
 env:
   REPO_URL: https://github.com/openwrt/openwrt
-  REPO_BRANCH: v22.03.6
+  REPO_BRANCH: openwrt-23.05
   FEEDS_CONF: feeds.conf.default.none
-  CONFIG_FILE: OpenWRT/x86_x64/v22.x64.mini.config
+  CONFIG_FILE: OpenWRT/x86_x64/v23.x64.mini.config
   CUSTOM_SH: OpenWRT/custom.sh
   UPLOAD_BIN_DIR: false
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   TZ: Asia/Shanghai
-  FILE_NAME: OP2203_X64_ROOTFS_mini
+  FILE_NAME: OP2305_X64_ROOTFS_mini
   PRODUCT_NAME: X86_X64
-  PRODUCT_NAME2: OP2203_X64_ROOTFS_mini
+  PRODUCT_NAME2: OP2305_X64_ROOTFS_mini
   GITHUB_RELEASE: https://g3s0.short.gy/OpenWRT
-  DISTRIB_REVISION: OpenWRT 22.03.6
+  DISTRIB_REVISION: OpenWRT 23.05
   KERNEL_PATCHVER: 无内核，纯LXC ROOTFS
 
 jobs:
@@ -81,6 +81,8 @@ jobs:
         df -hT $PWD
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+        useVersionInfo=$(git show -s --date=short --format="Author: %an<br/>date: %cd<br/>commit: %s<br/>commit hash: %H")
+        echo "useVersionInfo=$useVersionInfo" >> $GITHUB_ENV
         echo "DATE=$(date "+%Y-%m-%d %H")" >> $GITHUB_ENV
         echo "DATE1=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
 
@@ -166,7 +168,7 @@ jobs:
         rm -rf openwrt-x86-64-generic-ext4-combined.img.gz
         rm -rf openwrt-x86-64-generic-ext4-rootfs.img.gz
         rm -rf openwrt-x86-64-generic-squashfs-combined.img.gz
-        mv openwrt-x86-64-generic-rootfs.tar.gz openwrt-22.03${{ env.VERSION }}-x86-64-generic-rootfs-${{ env.FILE_DATE2 }}.tar.gz
+        mv openwrt-x86-64-generic-rootfs.tar.gz openwrt-23.05${{ env.VERSION }}-x86-64-generic-rootfs-${{ env.FILE_DATE2 }}.tar.gz
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
 
