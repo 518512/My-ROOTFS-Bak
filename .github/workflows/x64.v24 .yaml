@@ -105,6 +105,9 @@ jobs:
         
         git clone $REPO_URL -b $REPO_BRANCH openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+        cd openwrt
+        useVersionInfo=$(git show -s --date=short --format="Author: %an<br/>date: %cd<br/>commit: %s<br/>commit hash: %H")
+        echo "useVersionInfo=$useVersionInfo" >> $GITHUB_ENV
         echo "DATE=$(date "+%Y-%m-%d %H")" >> $GITHUB_ENV
         echo "DATE1=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
 
@@ -223,18 +226,14 @@ jobs:
         commit: ${{ github.sha }}  # 使用有效的 commit SHA 值
         token: ${{ secrets.TOKEN3  }}
         body: |
-          **OpenWRT official Mini Firmware for x86/64**
-          ### 📒 固件信息
-          - 🚀 每日：OpenWRT 作者固件 ➦ [xYx-c](https://github.com/xYx-c/build-openwrt/releases) ➦ [Zane-E](https://github.com/Zane-E/ROOTFS/releases) ➦ [217heidai](https://github.com/217heidai/OpenWrt-Builder/releases)
+          ### 📒 固件信息：LXC底包，非完整固件
           - 💻 平台架构: x86/x64 , 🌐 默认地址: 10.5.2.1 , 🔑 默认密码: password
           - ⚽ 固件源码: ${{ env.REPO_URL }} , 💝 源码分支: openwrt-22/ 23/ 24
-          ### 🧊 固件版本
-          - LXC Mini底包，非完整固件，每周五18点自动编译
-          - 固件编译前最后一次➦[主源码](${{ env.REPO_URL }})更新记录
+          - OpenWRT v24 更新记录
           ${{ env.useVersionInfo }}
-          - v23
+          - OpenWRT v23 更新记录
           ${{ env.useVersionInfo23 }}
-          - v22
+          - OpenWRT v22 更新记录
           ${{ env.useVersionInfo22 }}
         artifacts: ${{ env.FIRMWARE }}/*
         
