@@ -55,13 +55,15 @@ jobs:
         run: |
           sudo rm -rf /etc/apt/sources.list.d/*
           sudo timedatectl set-timezone "$TZ"
-          sudo mkdir -p /workdir
-          sudo chown $USER:$GROUPS /workdir
+          sudo mkdir -p /mnt/workdir
+          sudo chown $USER:$GROUPS /mnt/workdir
 
       - name: Clone source code
-        working-directory: /workdir
+        working-directory: /mnt/workdir
         run: |
+          df -hT $PWD
           git clone $REPO_URL -b ${{ matrix.target.branch }} openwrt
+          ln -sf /mnt/workdir/openwrt $GITHUB_WORKSPACE/openwrt
           cd openwrt
           useVersionInfo=$(git show -s --date=short --format="Author: %an\nDate: %cd\nCommit: %s\nCommit hash: %H")
           echo "OPENWRT_${{ matrix.target.version }}_INFO<<EOF" >> $GITHUB_ENV
@@ -115,7 +117,7 @@ jobs:
           cd /workdir/openwrt/bin/targets/*/*
           rm -rf packages *.buildinfo profiles.json sha256sums *.vmdk *.img.gz *.bin *.manifest
           mv *.tar.gz $GITHUB_WORKSPACE/${{ matrix.target.branch }}-${{ env.FILE_DATE2 }}.tar.gz
-          echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+          echo "FIRMWARE=$GITHUB_WORKSPACE" >> $GITHUB_ENV
           echo "status=success" >> $GITHUB_OUTPUT
 
       - name: Upload firmware
@@ -139,7 +141,7 @@ jobs:
 
       - name: Create release
         if: ${{ env.UPLOAD_RELEASE == 'true' }}
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@main
         with:
           name: R${{ env.DATE1 }} for ${{ env.PRODUCT_NAME }}
           allowUpdates: true
