@@ -42,7 +42,10 @@ jobs:
             config: OpenWRT/x86_x64/v23.x64.mini.config
             file_name: OP2203_X64_ROOTFS_mini
             version: 22.03
-
+    outputs:
+      log_24: ${{ steps.collect.outputs.log_24 }}
+      log_23: ${{ steps.collect.outputs.log_23 }}
+      log_22: ${{ steps.collect.outputs.log_22 }}
     env:
       FILE_NAME: ${{ matrix.target.file_name }}
       CONFIG_FILE: ${{ matrix.target.config }}
@@ -56,35 +59,43 @@ jobs:
         run: |
           sudo rm -rf /etc/apt/sources.list.d/*
           sudo timedatectl set-timezone "$TZ"
-          sudo mkdir -p /mnt/workdir/${{ matrix.target.name }}
-          sudo chown $USER:$GROUPS /mnt/workdir/${{ matrix.target.name }}
+          sudo mkdir -p /mnt/workdir
+          sudo chown $USER:$GROUPS /mnt/workdir
 
       - name: Clone source code
-        working-directory: /mnt/workdir/${{ matrix.target.name }}
+        working-directory: /mnt/workdir
         run: |
           git clone $REPO_URL -b ${{ matrix.target.branch }} openwrt
-          cd openwrt
-          useVersionInfo=$(git show -s --date=short --format="Author: %an\nDate: %cd\nCommit: %s\nCommit hash: %H")
-          echo "OPENWRT_${{ matrix.target.version }}_INFO<<EOF" >> $GITHUB_ENV
-          echo "OpenWRT v${{ matrix.target.version }} 更新记录" >> $GITHUB_ENV
-          echo "$useVersionInfo" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          ln -sf /mnt/workdir/openwrt $GITHUB_WORKSPACE/openwrt
+
+      - name: Collect version info
+        id: collect
+        run: |
+          cd /mnt/workdir/openwrt
+          info="$(git show -s --date=short --format='Author: %an\nDate: %cd\nCommit: %s\nCommit hash: %H')"
+          if [[ "${{ matrix.target.version }}" == "24.10" ]]; then
+            echo "log_24=OpenWRT v24 更新记录\n$info" >> $GITHUB_OUTPUT
+          elif [[ "${{ matrix.target.version }}" == "23.05" ]]; then
+            echo "log_23=OpenWRT v23 更新记录\n$info" >> $GITHUB_OUTPUT
+          elif [[ "${{ matrix.target.version }}" == "22.03" ]]; then
+            echo "log_22=OpenWRT v22 更新记录\n$info" >> $GITHUB_OUTPUT
+          fi
           echo "DATE=$(date '+%Y-%m-%d %H')" >> $GITHUB_ENV
           echo "DATE1=$(date '+%Y-%m-%d')" >> $GITHUB_ENV
 
       - name: Update feeds
-        run: cd /mnt/workdir/${{ matrix.target.name }}/openwrt && ./scripts/feeds update -a
+        run: cd /mnt/workdir/openwrt && ./scripts/feeds update -a
 
       - name: Install feeds
-        run: cd /mnt/workdir/${{ matrix.target.name }}/openwrt && ./scripts/feeds install -a
+        run: cd /mnt/workdir/openwrt && ./scripts/feeds install -a
 
       - name: Load custom config
         run: |
-          [ -e files ] && mv files /mnt/workdir/${{ matrix.target.name }}/openwrt/files
-          [ -e banner ] && mv banner /mnt/workdir/${{ matrix.target.name }}/openwrt/package/base-files/files/etc/banner
-          [ -e $CONFIG_FILE ] && mv $CONFIG_FILE /mnt/workdir/${{ matrix.target.name }}/openwrt/.config
+          [ -e files ] && mv files /mnt/workdir/openwrt/files
+          [ -e banner ] && mv banner /mnt/workdir/openwrt/package/base-files/files/etc/banner
+          [ -e $CONFIG_FILE ] && mv $CONFIG_FILE /mnt/workdir/openwrt/.config
           chmod +x OpenWRT/custom.sh
-          cd /mnt/workdir/${{ matrix.target.name }}/openwrt
+          cd /mnt/workdir/openwrt
           $GITHUB_WORKSPACE/OpenWRT/custom.sh
 
       - name: SSH connection to Actions (optional)
@@ -96,7 +107,7 @@ jobs:
 
       - name: Download packages
         run: |
-          cd /mnt/workdir/${{ matrix.target.name }}/openwrt
+          cd /mnt/workdir/openwrt
           make defconfig
           make download -j$(nproc)
           find dl -size -1024c -exec rm -f {} \;
@@ -104,7 +115,7 @@ jobs:
       - name: Compile firmware
         id: compile
         run: |
-          cd /mnt/workdir/${{ matrix.target.name }}/openwrt
+          cd /mnt/workdir/openwrt
           make -j$(nproc) || make -j1 || make -j1 V=s
           echo "status=success" >> $GITHUB_OUTPUT
           echo "FILE_DATE2=$(date '+%Y%m%d%H%M')" >> $GITHUB_ENV
@@ -113,7 +124,7 @@ jobs:
         id: organize
         if: steps.compile.outputs.status == 'success'
         run: |
-          cd /mnt/workdir/${{ matrix.target.name }}/openwrt/bin/targets/*/*
+          cd /mnt/workdir/openwrt/bin/targets/*/*
           rm -rf packages *.buildinfo profiles.json sha256sums *.vmdk *.img.gz *.bin *.manifest
           mv *.tar.gz $GITHUB_WORKSPACE/${{ matrix.target.branch }}-${{ env.FILE_DATE2 }}.tar.gz
           echo "FIRMWARE=$GITHUB_WORKSPACE" >> $GITHUB_ENV
@@ -125,22 +136,15 @@ jobs:
         with:
           name: Firmware-${{ matrix.target.branch }}-${{ env.FILE_DATE2 }}
           path: ${{ env.FIRMWARE }}/*
+          if-no-files-found: warn
 
   release:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Set combined version info env
-        run: |
-          echo "ALL_VERSION_INFO<<EOF" >> $GITHUB_ENV
-          echo "$OPENWRT_24.10_INFO" >> $GITHUB_ENV
-          echo "$OPENWRT_23.05_INFO" >> $GITHUB_ENV
-          echo "$OPENWRT_22.03_INFO" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
       - name: Create release
         if: ${{ env.UPLOAD_RELEASE == 'true' }}
-        uses: ncipollo/release-action@main
+        uses: ncipollo/release-action@v1
         with:
           name: R${{ env.DATE1 }} for ${{ env.PRODUCT_NAME }}
           allowUpdates: true
@@ -150,11 +154,12 @@ jobs:
           body: |
             **OpenWRT official Mini Firmware for x86/64**
 
-            ${{ env.ALL_VERSION_INFO }}
+            ${{ needs.build.outputs.log_24 }}
+
+            ${{ needs.build.outputs.log_23 }}
+
+            ${{ needs.build.outputs.log_22 }}
 
       - name: Telegram notification
         run: |
-          curl "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=\
-          ✔️ ${{ env.PRODUCT_NAME }} 固件已成功编译！\
-          ⏰ 时间: ${{ env.DATE1 }}\
-          📅 下载地址: ${{ env.GITHUB_RELEASE }}" >/dev/null 2>&1
+          curl "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=\n📄 ${{ env.PRODUCT_NAME }} 固件已成功编译！\n🕒 时间: ${{ env.DATE1 }}\n📅 下载地址: ${{ env.GITHUB_RELEASE }}" >/dev/null 2>&1
