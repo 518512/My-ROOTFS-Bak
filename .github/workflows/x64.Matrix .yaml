@@ -57,12 +57,15 @@ jobs:
           sudo timedatectl set-timezone "$TZ"
           sudo mkdir -p /mnt/workdir
           sudo chown $USER:$GROUPS /mnt/workdir
-          ln -sf /mnt/workdir $HOME/workdir
+          ln -sf /mnt/workdir /workdir
+          ln -sf /mnt/workdir/openwrt $GITHUB_WORKSPACE/openwrt || true
 
       - name: Clone source code
         working-directory: /mnt/workdir
         run: |
           git clone $REPO_URL -b ${{ matrix.target.branch }} openwrt
+          cd openwrt
+          git show -s --date=short --format="OpenWRT v${{ matrix.target.version }} 更新记录%nAuthor: %an%nDate: %cd%nCommit: %s%nCommit hash: %H%n" > $GITHUB_WORKSPACE/${{ matrix.target.branch }}.version.txt
           echo "DATE=$(date '+%Y-%m-%d %H')" >> $GITHUB_ENV
           echo "DATE1=$(date '+%Y-%m-%d')" >> $GITHUB_ENV
 
@@ -113,40 +116,34 @@ jobs:
           echo "FIRMWARE=$GITHUB_WORKSPACE" >> $GITHUB_ENV
           echo "status=success" >> $GITHUB_OUTPUT
 
-      - name: Upload firmware
+      - name: Upload firmware (artifact)
         uses: actions/upload-artifact@v4
         if: steps.organize.outputs.status == 'success'
         with:
           name: Firmware-${{ matrix.target.branch }}-${{ env.FILE_DATE2 }}
-          path: ${{ env.FIRMWARE }}/*
+          path: ${{ env.FIRMWARE }}/*.tar.gz
 
-      - name: Save version info
-        if: steps.compile.outputs.status == 'success'
-        run: |
-          cd /mnt/workdir/openwrt
-          echo "OpenWRT v${{ matrix.target.version }} 更新记录" > $GITHUB_WORKSPACE/${{ matrix.target.version }}.version.txt
-          git show -s --date=short --format="Author: %an\nDate: %cd\nCommit: %s\nCommit hash: %H" >> $GITHUB_WORKSPACE/${{ matrix.target.version }}.version.txt
-
-      - name: Upload version info
-        if: steps.compile.outputs.status == 'success'
-        uses: actions/upload-artifact@v4
+      - name: Upload firmware to GitHub Release
+        if: steps.organize.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true'
+        uses: softprops/action-gh-release@v1
         with:
-          name: version-${{ matrix.target.version }}
-          path: ${{ matrix.target.version }}.version.txt
+          tag_name: ${{ env.PRODUCT_NAME }}
+          name: R${{ env.DATE1 }} for ${{ env.PRODUCT_NAME }}
+          files: |
+            ${{ env.FIRMWARE }}/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN3 }}
 
   release:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download all version info
-        uses: actions/download-artifact@v4
-        with:
-          pattern: version-*
-          merge-multiple: true
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - name: Combine version info into env
+      - name: Gather version info
         run: |
-          cat *.version.txt > version_body.txt
+          cat openwrt-*.version.txt > version_body.txt
           echo "ALL_VERSION_INFO<<EOF" >> $GITHUB_ENV
           cat version_body.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
@@ -167,4 +164,4 @@ jobs:
 
       - name: Telegram notification
         run: |
-          curl "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=\n          ✔️ ${{ env.PRODUCT_NAME }} 固件已成功编译！\n          ⏰ 时间: ${{ env.DATE1 }}\n          📅 下载地址: ${{ env.GITHUB_RELEASE }}" >/dev/null 2>&1
+          curl "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=✔️ ${{ env.PRODUCT_NAME }} 固件已成功编译！%0A⏰ 时间: ${{ env.DATE1 }}%0A📥 下载地址: ${{ env.GITHUB_RELEASE }}" >/dev/null 2>&1
