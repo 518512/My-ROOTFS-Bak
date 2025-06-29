@@ -57,8 +57,6 @@ jobs:
           sudo timedatectl set-timezone "$TZ"
           sudo mkdir -p /mnt/workdir
           sudo chown $USER:$GROUPS /mnt/workdir
-          ln -sf /mnt/workdir /workdir
-          ln -sf /mnt/workdir/openwrt $GITHUB_WORKSPACE/openwrt || true
 
       - name: Clone source code
         working-directory: /mnt/workdir
