@@ -110,7 +110,7 @@ jobs:
         run: |
           cd /mnt/workdir/openwrt/bin/targets/*/*
           rm -rf packages *.buildinfo profiles.json sha256sums *.vmdk *.img.gz *.bin *.manifest
-          mv *.tar.gz $GITHUB_WORKSPACE/${{ matrix.target.branch }}-${{ env.FILE_DATE2 }}.tar.gz
+          mv *.tar.gz $GITHUB_WORKSPACE/${{ matrix.target.branch }}-x86-64-generic-rootfs-${{ env.FILE_DATE2 }}.tar.gz
           echo "FIRMWARE=$GITHUB_WORKSPACE" >> $GITHUB_ENV
           echo "status=success" >> $GITHUB_OUTPUT
 
@@ -127,10 +127,15 @@ jobs:
         with:
           tag_name: ${{ env.PRODUCT_NAME }}
           name: R${{ env.DATE1 }} for ${{ env.PRODUCT_NAME }}
-          files: |
-            ${{ env.FIRMWARE }}/*.tar.gz
+          files: ${{ env.FIRMWARE }}/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN3 }}
+
+      - name: Upload version info
+        uses: actions/upload-artifact@v4
+        with:
+          name: version-${{ matrix.target.branch }}
+          path: $GITHUB_WORKSPACE/${{ matrix.target.branch }}.version.txt
 
   release:
     needs: build
@@ -139,9 +144,15 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      - name: Download version info artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: version-*
+          merge-multiple: true
+
       - name: Gather version info
         run: |
-          cat openwrt-*.version.txt > version_body.txt
+          cat *.version.txt > version_body.txt
           echo "ALL_VERSION_INFO<<EOF" >> $GITHUB_ENV
           cat version_body.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
@@ -162,4 +173,5 @@ jobs:
 
       - name: Telegram notification
         run: |
-          curl "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=✔️ ${{ env.PRODUCT_NAME }} 固件已成功编译！%0A⏰ 时间: ${{ env.DATE1 }}%0A📥 下载地址: ${{ env.GITHUB_RELEASE }}" >/dev/null 2>&1
+          curl "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+          -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=✔️ ${{ env.PRODUCT_NAME }} 固件已成功编译！%0A⏰ 时间: ${{ env.DATE1 }}%0A📥 下载地址: ${{ env.GITHUB_RELEASE }}" >/dev/null 2>&1
