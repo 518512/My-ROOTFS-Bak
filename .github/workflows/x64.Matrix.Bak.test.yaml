@@ -1,4 +1,4 @@
-name: OpenWrt x64 Matrix Release
+name: OpenWrt x64 Matrix 2-Release
 permissions: write-all
 
 on:
