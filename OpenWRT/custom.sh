@@ -37,13 +37,11 @@ git clone https://github.com/jerrykuku/luci-app-argon-config.git package/luci-ap
 # rm -rf feeds/kenzo/luci-theme-argon
 git clone https://github.com/jerrykuku/luci-theme-argon.git package/luci-theme-argon
 
-rm -rf feeds/packages/lang/golang
-git clone https://github.com/sbwml/packages_lang_golang -b 20.x feeds/packages/lang/golang
 
 #mosdns
 git clone https://github.com/sbwml/luci-app-mosdns -b v5 package/mosdns
 git clone https://github.com/sbwml/v2ray-geodata package/v2ray-geodata
 
-## update golang 1.23
+## update golang 1.24
 rm -rf feeds/packages/lang/golang
-git clone https://github.com/sbwml/packages_lang_golang -b 23.x feeds/packages/lang/golang
+git clone https://github.com/sbwml/packages_lang_golang -b 24.x feeds/packages/lang/golang
