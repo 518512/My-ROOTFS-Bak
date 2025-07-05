@@ -1,4 +1,4 @@
-name: OpenWrt x64 Matrix 2-Releases
+name: OpenWrt x64 Matrix 2-Release
 permissions: write-all
 
 on:
@@ -44,6 +44,7 @@ jobs:
             file_name: OP2203_X64_ROOTFS_mini
             version: 22.03
     env:
+      FILE_NAME: ${{ matrix.target.file_name }}
       CONFIG_FILE: ${{ matrix.target.config }}
       DISTRIB_REVISION: OpenWRT ${{ matrix.target.version }}
 
@@ -65,8 +66,8 @@ jobs:
           mkdir -p $GITHUB_WORKSPACE/version-info/${{ matrix.target.branch }}
           cd openwrt
           git show -s --date=short --format="OpenWRT v${{ matrix.target.version }} 更新记录%nAuthor: %an%nDate: %cd%nCommit: %s%nCommit hash: %H%n" > $GITHUB_WORKSPACE/version-info/${{ matrix.target.branch }}/${{ matrix.target.branch }}.version.txt
-          echo "DATE=$(date '+%Y-%m-%d %H')" >> $GITHUB_ENV
-          echo "DATE1=$(date '+%Y-%m-%d')" >> $GITHUB_ENV
+          echo "DATE=$(date '+%Y-%m-%d')" >> $GITHUB_ENV
+          echo "DATE1=$(date '+%Y%m%d')" >> $GITHUB_ENV
 
       - name: Update feeds
         run: cd /mnt/workdir/openwrt && ./scripts/feeds update -a
@@ -103,36 +104,25 @@ jobs:
           cd /mnt/workdir/openwrt
           make -j$(nproc) || make -j1 || make -j1 V=s
           echo "status=success" >> $GITHUB_OUTPUT
-          echo "FILE_DATE2=$(date '+%Y%m%d%H%M')" >> $GITHUB_ENV
 
-      - name: Rename firmware with version prefix
+      - name: Organize firmware (rename)
+        id: organize_renamed
         if: steps.compile.outputs.status == 'success'
         run: |
+          mkdir -p $GITHUB_WORKSPACE/renamed
           cd /mnt/workdir/openwrt/bin/targets/*/*
-          RAW_NAME=$(ls *.tar.gz)
-          VERSIONED_NAME=openwrt-${{ matrix.target.version }}-$RAW_NAME
-          cp "$RAW_NAME" "$GITHUB_WORKSPACE/$VERSIONED_NAME"
-          echo "RENAMED_RAW=$GITHUB_WORKSPACE/$VERSIONED_NAME" >> $GITHUB_ENV
+          ORIGINAL=$(ls openwrt-*-rootfs.tar.gz | head -n 1)
+          NEWNAME="openwrt-${{ matrix.target.version }}-${DATE1}-x86-64-rootfs.tar.gz"
+          cp "$ORIGINAL" "$GITHUB_WORKSPACE/renamed/$NEWNAME"
+          echo "FIRMWARE_RENAMED=$GITHUB_WORKSPACE/renamed/$NEWNAME" >> $GITHUB_ENV
+          echo "status=success" >> $GITHUB_OUTPUT
 
-      - name: Upload versioned raw firmware to main release
-        if: steps.compile.outputs.status == 'success'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ env.PRODUCT_NAME }}
-          name: R${{ env.DATE1 }} for ${{ env.PRODUCT_NAME }}
-          body: |
-            ⚙️ OpenWRT 官方精简固件
-            📅 日期: ${{ env.DATE1 }}
-          files: ${{ env.RENAMED_RAW }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN3 }}
-
-      - name: Upload firmware (artifact)
+      - name: Upload renamed firmware (artifact)
+        if: steps.organize_renamed.outputs.status == 'success'
         uses: actions/upload-artifact@v4
-        if: steps.compile.outputs.status == 'success'
         with:
-          name: Firmware-${{ matrix.target.branch }}-${{ env.FILE_DATE2 }}
-          path: ${{ env.RENAMED_RAW }}
+          name: Renamed-${{ matrix.target.branch }}-${{ env.DATE1 }}
+          path: ${{ env.FIRMWARE_RENAMED }}
 
       - name: Upload version info (artifact)
         uses: actions/upload-artifact@v4
@@ -150,6 +140,12 @@ jobs:
           pattern: VersionInfo-*
           path: ./versions
 
+      - name: Download renamed firmware artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: Renamed-*
+          path: ./renamed
+
       - name: Gather version info
         run: |
           find ./versions -name "*.version.txt" | sort | xargs cat > version_body.txt
@@ -157,20 +153,36 @@ jobs:
           cat version_body.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      - name: Create main release with version info
+      - name: Create main release
         if: ${{ env.UPLOAD_RELEASE == 'true' }}
         uses: ncipollo/release-action@main
         with:
-          name: R${{ env.DATE1 }} for ${{ env.PRODUCT_NAME }}
+          name: R${{ env.DATE }} for ${{ env.PRODUCT_NAME }}
           allowUpdates: true
           tag: ${{ env.PRODUCT_NAME }}
           commit: ${{ github.sha }}
           token: ${{ secrets.TOKEN3 }}
           body: |
-            ✅ OpenWRT 官方精简固件
+            **OpenWRT 官方精简固件**
 
             ${{ env.ALL_VERSION_INFO }}
+          files: ./renamed/*.tar.gz
+
+      - name: Create backup release
+        if: ${{ env.UPLOAD_RELEASE == 'true' }}
+        uses: ncipollo/release-action@main
+        with:
+          name: ${{ env.PRODUCT_NAME_Bak }}
+          allowUpdates: true
+          tag: ${{ env.PRODUCT_NAME_Bak }}
+          commit: ${{ github.sha }}
+          token: ${{ secrets.TOKEN3 }}
+          body: |
+            **OpenWRT 重命名备份固件**
+
+            ${{ env.ALL_VERSION_INFO }}
+          files: ./renamed/*.tar.gz
 
       - name: Telegram notification
         run: |
-          curl "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=✔️ ${{ env.PRODUCT_NAME }} 固件已成功编译！%0A⏰ 时间: ${{ env.DATE1 }}%0A📥 下载地址: ${{ env.GITHUB_RELEASE }}" >/dev/null 2>&1
+          curl "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=✔️ ${{ env.PRODUCT_NAME }} 固件已成功编译！%0A⏰ 时间: ${{ env.DATE }}%0A📥 下载地址: ${{ env.GITHUB_RELEASE }}" >/dev/null 2>&1
