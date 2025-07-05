@@ -9,16 +9,12 @@ on:
         required: false
         default: 'false'
   schedule:
-    - cron: '0 18 * * 5'
+    - cron: '0 18 * * 5'  # 每周五 18:00 触发
 
 env:
   REPO_URL: https://github.com/openwrt/openwrt
   TZ: Asia/Shanghai
-  UPLOAD_BIN_DIR: false
-  UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
-  GITHUB_RELEASE: https://g3s0.short.gy/OpenWRT
-  KERNEL_PATCHVER: 无内核，纯LXC ROOTFS
   PRODUCT_NAME_Bak: X86_X64_Matrix_Bak
   PRODUCT_NAME: X86_X64_Matrix
 
@@ -31,35 +27,31 @@ jobs:
           - name: openwrt24
             branch: openwrt-24.10
             config: OpenWRT/x86_x64/v23.x64.mini.config
-            file_name: OP2410_X64_ROOTFS_mini
             version: 24.10
           - name: openwrt23
             branch: openwrt-23.05
             config: OpenWRT/x86_x64/v23.x64.mini.config
-            file_name: OP2305_X64_ROOTFS_mini
             version: 23.05
           - name: openwrt22
             branch: openwrt-22.03
             config: OpenWRT/x86_x64/v23.x64.mini.config
-            file_name: OP2203_X64_ROOTFS_mini
             version: 22.03
     env:
-      FILE_NAME: ${{ matrix.target.file_name }}
       CONFIG_FILE: ${{ matrix.target.config }}
       DISTRIB_REVISION: OpenWRT ${{ matrix.target.version }}
 
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v3
 
-      - name: Setup build environment
+      - name: Setup environment
         run: |
           sudo rm -rf /etc/apt/sources.list.d/*
           sudo timedatectl set-timezone "$TZ"
           sudo mkdir -p /mnt/workdir
           sudo chown $USER:$GROUPS /mnt/workdir
 
-      - name: Clone source code
+      - name: Clone OpenWrt repo
         working-directory: /mnt/workdir
         run: |
           git clone $REPO_URL -b ${{ matrix.target.branch }} openwrt
@@ -75,7 +67,7 @@ jobs:
       - name: Install feeds
         run: cd /mnt/workdir/openwrt && ./scripts/feeds install -a
 
-      - name: Load custom config
+      - name: Load custom config & scripts
         run: |
           [ -e files ] && mv files /mnt/workdir/openwrt/files
           [ -e banner ] && mv banner /mnt/workdir/openwrt/package/base-files/files/etc/banner
@@ -84,7 +76,7 @@ jobs:
           cd /mnt/workdir/openwrt
           $GITHUB_WORKSPACE/OpenWRT/custom.sh
 
-      - name: SSH connection to Actions (optional)
+      - name: SSH debug connection (optional)
         if: github.event.inputs.ssh == 'true'
         uses: P3TERX/ssh2actions@v1.0.0
         env:
@@ -105,8 +97,14 @@ jobs:
           make -j$(nproc) || make -j1 || make -j1 V=s
           echo "status=success" >> $GITHUB_OUTPUT
 
-      - name: Organize firmware (rename)
-        id: organize_renamed
+      - name: Upload raw firmware (unrenamed) as artifact
+        if: steps.compile.outputs.status == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: RawFirmware-${{ matrix.target.branch }}
+          path: /mnt/workdir/openwrt/bin/targets/*/*/*.tar.gz
+
+      - name: Rename firmware and copy to workspace
         if: steps.compile.outputs.status == 'success'
         run: |
           mkdir -p $GITHUB_WORKSPACE/renamed
@@ -115,16 +113,15 @@ jobs:
           NEWNAME="openwrt-${{ matrix.target.version }}-${DATE1}-x86-64-rootfs.tar.gz"
           cp "$ORIGINAL" "$GITHUB_WORKSPACE/renamed/$NEWNAME"
           echo "FIRMWARE_RENAMED=$GITHUB_WORKSPACE/renamed/$NEWNAME" >> $GITHUB_ENV
-          echo "status=success" >> $GITHUB_OUTPUT
 
-      - name: Upload renamed firmware (artifact)
-        if: steps.organize_renamed.outputs.status == 'success'
+      - name: Upload renamed firmware as artifact
+        if: steps.compile.outputs.status == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: Renamed-${{ matrix.target.branch }}-${{ env.DATE1 }}
+          name: RenamedFirmware-${{ matrix.target.branch }}
           path: ${{ env.FIRMWARE_RENAMED }}
 
-      - name: Upload version info (artifact)
+      - name: Upload version info as artifact
         uses: actions/upload-artifact@v4
         with:
           name: VersionInfo-${{ matrix.target.branch }}
@@ -140,10 +137,16 @@ jobs:
           pattern: VersionInfo-*
           path: ./versions
 
+      - name: Download raw firmware artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: RawFirmware-*
+          path: ./main
+
       - name: Download renamed firmware artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: Renamed-*
+          pattern: RenamedFirmware-*
           path: ./renamed
 
       - name: Gather version info
@@ -153,35 +156,33 @@ jobs:
           cat version_body.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      - name: Create main release
+      - name: Create main release (unrenamed files)
         if: ${{ env.UPLOAD_RELEASE == 'true' }}
-        uses: ncipollo/release-action@main
+        uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ env.PRODUCT_NAME }}
           name: R${{ env.DATE }} for ${{ env.PRODUCT_NAME }}
-          allowUpdates: true
-          tag: ${{ env.PRODUCT_NAME }}
-          commit: ${{ github.sha }}
-          token: ${{ secrets.TOKEN3 }}
           body: |
             **OpenWRT 官方精简固件**
 
             ${{ env.ALL_VERSION_INFO }}
-          files: ./renamed/*.tar.gz
+          files: ./main/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN3 }}
 
-      - name: Create backup release
+      - name: Create backup release (renamed files)
         if: ${{ env.UPLOAD_RELEASE == 'true' }}
-        uses: ncipollo/release-action@main
+        uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ env.PRODUCT_NAME_Bak }}
           name: ${{ env.PRODUCT_NAME_Bak }}
-          allowUpdates: true
-          tag: ${{ env.PRODUCT_NAME_Bak }}
-          commit: ${{ github.sha }}
-          token: ${{ secrets.TOKEN3 }}
           body: |
             **OpenWRT 重命名备份固件**
 
             ${{ env.ALL_VERSION_INFO }}
           files: ./renamed/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN3 }}
 
       - name: Telegram notification
         run: |
