@@ -1,4 +1,4 @@
-name: OpenWrt x64 Matrix 2-Release
+name: OpenWrt x64 Matrix 2-Releases
 permissions: write-all
 
 on:
@@ -14,11 +14,13 @@ on:
 env:
   REPO_URL: https://github.com/openwrt/openwrt
   TZ: Asia/Shanghai
+  UPLOAD_BIN_DIR: false
+  UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   GITHUB_RELEASE: https://g3s0.short.gy/OpenWRT
   KERNEL_PATCHVER: 无内核，纯LXC ROOTFS
-  PRODUCT_NAME: X86_X64_Matrix
   PRODUCT_NAME_Bak: X86_X64_Matrix_Bak
+  PRODUCT_NAME: X86_X64_Matrix
 
 jobs:
   build:
@@ -29,14 +31,17 @@ jobs:
           - name: openwrt24
             branch: openwrt-24.10
             config: OpenWRT/x86_x64/v23.x64.mini.config
+            file_name: OP2410_X64_ROOTFS_mini
             version: 24.10
           - name: openwrt23
             branch: openwrt-23.05
             config: OpenWRT/x86_x64/v23.x64.mini.config
+            file_name: OP2305_X64_ROOTFS_mini
             version: 23.05
           - name: openwrt22
             branch: openwrt-22.03
             config: OpenWRT/x86_x64/v23.x64.mini.config
+            file_name: OP2203_X64_ROOTFS_mini
             version: 22.03
     env:
       CONFIG_FILE: ${{ matrix.target.config }}
@@ -46,28 +51,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup environment
+      - name: Setup build environment
         run: |
+          sudo rm -rf /etc/apt/sources.list.d/*
           sudo timedatectl set-timezone "$TZ"
-          sudo mkdir -p /mnt/workdir && sudo chown $USER:$GROUPS /mnt/workdir
+          sudo mkdir -p /mnt/workdir
+          sudo chown $USER:$GROUPS /mnt/workdir
 
-      - name: Clone source
+      - name: Clone source code
         working-directory: /mnt/workdir
         run: |
           git clone $REPO_URL -b ${{ matrix.target.branch }} openwrt
           mkdir -p $GITHUB_WORKSPACE/version-info/${{ matrix.target.branch }}
           cd openwrt
           git show -s --date=short --format="OpenWRT v${{ matrix.target.version }} 更新记录%nAuthor: %an%nDate: %cd%nCommit: %s%nCommit hash: %H%n" > $GITHUB_WORKSPACE/version-info/${{ matrix.target.branch }}/${{ matrix.target.branch }}.version.txt
-          echo "DATE=$(date '+%Y-%m-%d')" >> $GITHUB_ENV
-          echo "DATETIME=$(date '+%Y%m%d%H%M')" >> $GITHUB_ENV
+          echo "DATE=$(date '+%Y-%m-%d %H')" >> $GITHUB_ENV
+          echo "DATE1=$(date '+%Y-%m-%d')" >> $GITHUB_ENV
 
-      - name: Update & install feeds
-        run: |
-          cd /mnt/workdir/openwrt
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
+      - name: Update feeds
+        run: cd /mnt/workdir/openwrt && ./scripts/feeds update -a
 
-      - name: Load config & run custom
+      - name: Install feeds
+        run: cd /mnt/workdir/openwrt && ./scripts/feeds install -a
+
+      - name: Load custom config
         run: |
           [ -e files ] && mv files /mnt/workdir/openwrt/files
           [ -e banner ] && mv banner /mnt/workdir/openwrt/package/base-files/files/etc/banner
@@ -76,7 +83,7 @@ jobs:
           cd /mnt/workdir/openwrt
           $GITHUB_WORKSPACE/OpenWRT/custom.sh
 
-      - name: SSH debug (optional)
+      - name: SSH connection to Actions (optional)
         if: github.event.inputs.ssh == 'true'
         uses: P3TERX/ssh2actions@v1.0.0
         env:
@@ -90,79 +97,71 @@ jobs:
           make download -j$(nproc)
           find dl -size -1024c -exec rm -f {} \;
 
-      - name: Compile
+      - name: Compile firmware
         id: compile
         run: |
           cd /mnt/workdir/openwrt
           make -j$(nproc) || make -j1 || make -j1 V=s
           echo "status=success" >> $GITHUB_OUTPUT
+          echo "FILE_DATE2=$(date '+%Y%m%d%H%M')" >> $GITHUB_ENV
 
-      - name: Collect tar.gz
-        id: collect
+      - name: Rename firmware with version prefix
         if: steps.compile.outputs.status == 'success'
         run: |
-          mkdir -p $GITHUB_WORKSPACE/out/${{ matrix.target.branch }}
-          cp /mnt/workdir/openwrt/bin/targets/*/*/*.tar.gz $GITHUB_WORKSPACE/out/${{ matrix.target.branch }}/
-          echo "status=success" >> $GITHUB_OUTPUT
+          cd /mnt/workdir/openwrt/bin/targets/*/*
+          RAW_NAME=$(ls *.tar.gz)
+          VERSIONED_NAME=openwrt-${{ matrix.target.version }}-$RAW_NAME
+          cp "$RAW_NAME" "$GITHUB_WORKSPACE/$VERSIONED_NAME"
+          echo "RENAMED_RAW=$GITHUB_WORKSPACE/$VERSIONED_NAME" >> $GITHUB_ENV
 
-      - name: Upload to main release (original name + prefix)
-        if: steps.collect.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true'
+      - name: Upload versioned raw firmware to main release
+        if: steps.compile.outputs.status == 'success'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ env.PRODUCT_NAME }}
-          name: R${{ env.DATE }} for ${{ env.PRODUCT_NAME }}
-          files: |
-            out/${{ matrix.target.branch }}/*.tar.gz
+          name: R${{ env.DATE1 }} for ${{ env.PRODUCT_NAME }}
+          body: |
+            ⚙️ OpenWRT 官方精简固件
+            📅 日期: ${{ env.DATE1 }}
+          files: ${{ env.RENAMED_RAW }}
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN3 }}
 
-      - name: Upload to backup release (renamed with datetime)
-        if: steps.collect.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true'
-        run: |
-          mkdir -p renamed
-          for f in out/${{ matrix.target.branch }}/*.tar.gz; do
-            cp "$f" "renamed/${{ matrix.target.branch }}-${{ env.DATETIME }}-$(basename "$f")"
-          done
-
-      - name: Upload renamed to Bak release
-        if: steps.collect.outputs.status == 'success' && env.UPLOAD_RELEASE == 'true'
-        uses: softprops/action-gh-release@v1
+      - name: Upload firmware (artifact)
+        uses: actions/upload-artifact@v4
+        if: steps.compile.outputs.status == 'success'
         with:
-          tag_name: ${{ env.PRODUCT_NAME_Bak }}
-          name: R${{ env.DATE }} for ${{ env.PRODUCT_NAME_Bak }}
-          files: |
-            renamed/*.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN3 }}
+          name: Firmware-${{ matrix.target.branch }}-${{ env.FILE_DATE2 }}
+          path: ${{ env.RENAMED_RAW }}
 
       - name: Upload version info (artifact)
         uses: actions/upload-artifact@v4
         with:
           name: VersionInfo-${{ matrix.target.branch }}
-          path: version-info/${{ matrix.target.branch }}/*.version.txt
+          path: ${{ github.workspace }}/version-info/${{ matrix.target.branch }}/*.version.txt
 
   release:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download version info
+      - name: Download version info artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: VersionInfo-*
           path: ./versions
 
-      - name: Merge version info
+      - name: Gather version info
         run: |
           find ./versions -name "*.version.txt" | sort | xargs cat > version_body.txt
           echo "ALL_VERSION_INFO<<EOF" >> $GITHUB_ENV
           cat version_body.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      - name: Finalize release (main)
-        if: env.UPLOAD_RELEASE == 'true'
+      - name: Create main release with version info
+        if: ${{ env.UPLOAD_RELEASE == 'true' }}
         uses: ncipollo/release-action@main
         with:
-          name: R${{ env.DATE }} for ${{ env.PRODUCT_NAME }}
+          name: R${{ env.DATE1 }} for ${{ env.PRODUCT_NAME }}
           allowUpdates: true
           tag: ${{ env.PRODUCT_NAME }}
           commit: ${{ github.sha }}
@@ -172,21 +171,6 @@ jobs:
 
             ${{ env.ALL_VERSION_INFO }}
 
-      - name: Finalize release (backup)
-        if: env.UPLOAD_RELEASE == 'true'
-        uses: ncipollo/release-action@main
-        with:
-          name: R${{ env.DATE }} for ${{ env.PRODUCT_NAME_Bak }}
-          allowUpdates: true
-          tag: ${{ env.PRODUCT_NAME_Bak }}
-          commit: ${{ github.sha }}
-          token: ${{ secrets.TOKEN3 }}
-          body: |
-            🔁 OpenWRT 构建备份（含重命名文件）
-
-            ${{ env.ALL_VERSION_INFO }}
-
-      - name: Telegram notify
+      - name: Telegram notification
         run: |
-          curl "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-          -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=✔️ 编译完成: ${{ env.PRODUCT_NAME }}%0A📅 日期: ${{ env.DATE }}%0A📦 下载: ${{ env.GITHUB_RELEASE }}" >/dev/null 2>&1
+          curl "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=✔️ ${{ env.PRODUCT_NAME }} 固件已成功编译！%0A⏰ 时间: ${{ env.DATE1 }}%0A📥 下载地址: ${{ env.GITHUB_RELEASE }}" >/dev/null 2>&1
