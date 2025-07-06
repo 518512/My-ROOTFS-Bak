@@ -84,7 +84,7 @@ jobs:
           $GITHUB_WORKSPACE/OpenWRT/custom.sh
           
       - name: Download packages
-      run: |
+        run: |
           cd /mnt/workdir/openwrt
           make defconfig
           make download -j$(nproc)
