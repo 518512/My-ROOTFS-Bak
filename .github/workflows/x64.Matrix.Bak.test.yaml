@@ -42,6 +42,12 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v3
+      - name: Setup build environment
+        run: |
+          sudo rm -rf /etc/apt/sources.list.d/*
+          sudo timedatectl set-timezone "$TZ"
+          sudo mkdir -p /mnt/workdir
+          sudo chown $USER:$GROUPS /mnt/workdir
 
       - name: Clone OpenWrt source
         working-directory: /mnt/workdir
