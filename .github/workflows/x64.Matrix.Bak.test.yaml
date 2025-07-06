@@ -18,7 +18,6 @@ env:
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   GITHUB_RELEASE: https://g3s0.short.gy/OpenWRT
-  KERNEL_PATCHVER: 无内核，纯LXC ROOTFS
   PRODUCT_NAME_Bak: X86_X64_Matrix_Bak
   PRODUCT_NAME: X86_X64_Matrix
 
