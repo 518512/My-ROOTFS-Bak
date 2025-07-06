@@ -82,6 +82,13 @@ jobs:
           chmod +x OpenWRT/custom.sh
           cd /mnt/workdir/openwrt
           $GITHUB_WORKSPACE/OpenWRT/custom.sh
+          
+      - name: Download packages
+      run: |
+          cd /mnt/workdir/openwrt
+          make defconfig
+          make download -j$(nproc)
+          find dl -size -1024c -exec rm -f {} \;
 
       - name: Telegram notify - 编译开始
         run: |
