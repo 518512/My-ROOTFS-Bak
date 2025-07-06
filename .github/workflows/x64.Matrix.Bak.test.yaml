@@ -18,6 +18,7 @@ env:
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   GITHUB_RELEASE: https://g3s0.short.gy/OpenWRT
+  KERNEL_PATCHVER: 无内核，纯LXC ROOTFS
   PRODUCT_NAME_Bak: X86_X64_Matrix_Bak
   PRODUCT_NAME: X86_X64_Matrix
 
@@ -65,8 +66,9 @@ jobs:
           mkdir -p $GITHUB_WORKSPACE/version-info/${{ matrix.target.branch }}
           cd openwrt
           git show -s --date=short --format="OpenWRT v${{ matrix.target.version }} 更新记录%nAuthor: %an%nDate: %cd%nCommit: %s%nCommit hash: %H%n" > $GITHUB_WORKSPACE/version-info/${{ matrix.target.branch }}/${{ matrix.target.branch }}.version.txt
-          echo "DATE=$(date '+%Y-%m-%d %H')" >> $GITHUB_ENV
-          echo "DATE1=$(date '+%Y-%m-%d')" >> $GITHUB_ENV
+          echo "DATE=$(date '+%Y-%m-%d')" >> $GITHUB_ENV
+          echo "DATE1=$(date '+%Y%m%d')" >> $GITHUB_ENV
+          echo "FILE_DATE2=$(date '+%Y%m%d%H%M')" >> $GITHUB_ENV
 
       - name: Update feeds
         run: cd /mnt/workdir/openwrt && ./scripts/feeds update -a
@@ -82,7 +84,18 @@ jobs:
           chmod +x OpenWRT/custom.sh
           cd /mnt/workdir/openwrt
           $GITHUB_WORKSPACE/OpenWRT/custom.sh
-          
+
+      - name: SSH connection to Actions (optional)
+        if: github.event.inputs.ssh == 'true'
+        uses: P3TERX/ssh2actions@v1.0.0
+        env:
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+
+      - name: Telegram Notification - Start Build
+        run: |
+          curl "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=🚧 开始构建: ${{ matrix.target.version }} %0A📁 配置: ${{ matrix.target.config }}" >/dev/null 2>&1
+
       - name: Download packages
         run: |
           cd /mnt/workdir/openwrt
@@ -90,43 +103,24 @@ jobs:
           make download -j$(nproc)
           find dl -size -1024c -exec rm -f {} \;
 
-      - name: Telegram notify - 编译开始
-        run: |
-          curl "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d "text=🚧 开始编译 OpenWRT ${{ matrix.target.branch }}，目标: ${{ env.FILE_NAME }}%0A⏰ 时间: ${{ env.DATE1 }}"
-
       - name: Compile firmware
         id: compile
         run: |
           cd /mnt/workdir/openwrt
           make -j$(nproc) || make -j1 || make -j1 V=s
           echo "status=success" >> $GITHUB_OUTPUT
-          echo "FILE_DATE2=$(date '+%Y%m%d%H%M')" >> $GITHUB_ENV
 
-      - name: Rename firmware for Bak release
+      - name: Rename firmware for main release
+        id: rename_main
         if: steps.compile.outputs.status == 'success'
         run: |
           cd /mnt/workdir/openwrt/bin/targets/*/*
-          for f in *.tar.gz; do
-            cp "$f" "$GITHUB_WORKSPACE/${{ matrix.target.branch }}-${{ env.FILE_DATE2 }}-$f"
-          done
+          ORIGINAL=$(ls openwrt-*-rootfs.tar.gz | head -n 1)
+          NEWNAME="openwrt-${{ matrix.target.version }}-${ORIGINAL#*-}"
+          cp "$ORIGINAL" "$GITHUB_WORKSPACE/$NEWNAME"
+          echo "RENAMED_MAIN=$GITHUB_WORKSPACE/$NEWNAME" >> $GITHUB_ENV
 
-      - name: Upload renamed firmware to Bak release
-        if: steps.compile.outputs.status == 'success'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ env.PRODUCT_NAME_Bak }}
-          name: R${{ env.DATE1 }} for ${{ env.PRODUCT_NAME_Bak }}
-          body: |
-            🔁 OpenWRT 构建备份（含重命名文件）
-
-            ${{ env.ALL_VERSION_INFO }}
-          files: ${{ github.workspace }}/*.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN3 }}
-
-      - name: Upload raw firmware to release
+      - name: Upload original firmware to main release
         if: steps.compile.outputs.status == 'success'
         uses: softprops/action-gh-release@v1
         with:
@@ -135,17 +129,35 @@ jobs:
           body: |
             ✅ OpenWRT 官方精简固件
 
-            ${{ env.ALL_VERSION_INFO }}
-          files: /mnt/workdir/openwrt/bin/targets/*/*/*.tar.gz
+            自动构建产物。
+          files: ${{ env.RENAMED_MAIN }}
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN3 }}
 
-      - name: Telegram notify - 编译完成
+      - name: Rename and copy firmware for backup release
+        id: organize
         if: steps.compile.outputs.status == 'success'
         run: |
-          curl "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d "text=✅ 编译完成: OpenWRT ${{ matrix.target.branch }}\n📦 文件名: ${{ env.FILE_NAME }}%0A📅 时间: ${{ env.DATE1 }}%0A📥 下载地址: ${{ env.GITHUB_RELEASE }}"
+          mkdir -p $GITHUB_WORKSPACE/renamed
+          cd /mnt/workdir/openwrt/bin/targets/*/*
+          ORIGINAL=$(ls openwrt-*-rootfs.tar.gz | head -n 1)
+          NEWNAME="openwrt-${{ matrix.target.version }}-${{ env.FILE_DATE2 }}-${ORIGINAL#*-}"
+          cp "$ORIGINAL" "$GITHUB_WORKSPACE/renamed/$NEWNAME"
+          echo "FIRMWARE_RENAMED=$GITHUB_WORKSPACE/renamed/$NEWNAME" >> $GITHUB_ENV
+          echo "status=success" >> $GITHUB_OUTPUT
+
+      - name: Upload renamed firmware (artifact)
+        if: steps.organize.outputs.status == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Renamed-${{ matrix.target.branch }}-${{ env.DATE1 }}
+          path: ${{ env.FIRMWARE_RENAMED }}
+
+      - name: Upload version info (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: VersionInfo-${{ matrix.target.branch }}
+          path: ${{ github.workspace }}/version-info/${{ matrix.target.branch }}/*.version.txt
 
   release:
     needs: build
@@ -157,6 +169,12 @@ jobs:
           pattern: VersionInfo-*
           path: ./versions
 
+      - name: Download renamed firmware artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: Renamed-*
+          path: ./renamed
+
       - name: Gather version info
         run: |
           find ./versions -name "*.version.txt" | sort | xargs cat > version_body.txt
@@ -164,8 +182,20 @@ jobs:
           cat version_body.txt >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      - name: Telegram notify - 所有版本编译完成
+      - name: Upload renamed firmware to backup release
+        if: ${{ env.UPLOAD_RELEASE == 'true' }}
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.PRODUCT_NAME_Bak }}
+          name: R${{ env.DATE1 }} for ${{ env.PRODUCT_NAME_Bak }}
+          body: |
+            🔁 OpenWRT 构建备份（含重命名文件）
+
+            ${{ env.ALL_VERSION_INFO }}
+          files: ./renamed/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN3 }}
+
+      - name: Telegram notification
         run: |
-          curl "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d "text=🎉 所有 OpenWRT 固件编译完成！%0A📅 时间: ${{ env.DATE1 }}%0A📥 下载地址: ${{ env.GITHUB_RELEASE }}"
+          curl "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=✔️ ${{ env.PRODUCT_NAME }} 固件已成功编译！%0A⏰ 时间: ${{ env.DATE }}%0A📥 下载地址: ${{ env.GITHUB_RELEASE }}" >/dev/null 2>&1
