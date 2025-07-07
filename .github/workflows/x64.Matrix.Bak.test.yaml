@@ -208,12 +208,6 @@ jobs:
             ${{ env.ALL_VERSION_INFO }}
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN3 }}
-      
-      - name: Read build duration
-        id: read_duration
-        run: |
-          DURATION=$(cat ./duration/build_duration.txt)
-          echo "duration=$DURATION" >> $GITHUB_OUTPUT
 
       - name: Telegram notification with full version info
         run: |
