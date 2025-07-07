@@ -193,8 +193,8 @@ jobs:
         if: ${{ env.UPLOAD_RELEASE == 'true' }}
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ env.PRODUCT_NAME }}
-          name: R${{ env.FILE_DATE3 }} for ${{ env.PRODUCT_NAME }}
+          tag_name: ${{ env.PRODUCT_NAME_Bak }}
+          name: ${{ env.PRODUCT_NAME_Bak }}
           body: |
             🔁 OpenWRT 构建备份（含重命名文件）
 
@@ -206,8 +206,8 @@ jobs:
         if: ${{ env.UPLOAD_RELEASE == 'true' }}
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ env.PRODUCT_NAME_Bak}}
-          name: R${{ env.FILE_DATE3 }} for ${{ env.PRODUCT_NAME_Bak }}
+          tag_name: ${{ env.PRODUCT_NAME }}
+          name: R${{ env.FILE_DATE3 }} for ${{ env.PRODUCT_NAME }}
           body: |
             🔁 OpenWRT 构建备份（含重命名文件）
 
