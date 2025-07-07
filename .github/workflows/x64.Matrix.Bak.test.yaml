@@ -176,6 +176,12 @@ jobs:
           pattern: Renamed-*
           path: ./renamed
 
+      - name: Download build duration artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-duration
+          path: ./duration
+
       - name: Gather and export all version info
         run: |
           find ./versions -name "*.version.txt" | sort | xargs cat > version_body.txt
@@ -187,8 +193,8 @@ jobs:
         if: ${{ env.UPLOAD_RELEASE == 'true' }}
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ env.PRODUCT_NAME_Bak }}
-          name: ${{ env.PRODUCT_NAME_Bak }}
+          tag_name: ${{ env.PRODUCT_NAME }}
+          name: R${{ env.FILE_DATE3 }} for ${{ env.PRODUCT_NAME }}
           body: |
             🔁 OpenWRT 构建备份（含重命名文件）
 
@@ -200,14 +206,15 @@ jobs:
         if: ${{ env.UPLOAD_RELEASE == 'true' }}
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ env.PRODUCT_NAME }}
-          name: R${{ env.FILE_DATE3 }} for ${{ env.PRODUCT_NAME }}
+          tag_name: ${{ env.PRODUCT_NAME_Bak}}
+          name: R${{ env.FILE_DATE3 }} for ${{ env.PRODUCT_NAME_Bak }}
           body: |
             🔁 OpenWRT 构建备份（含重命名文件）
 
             ${{ env.ALL_VERSION_INFO }}
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN3 }}
+      
 
       - name: Telegram notification with full version info
         run: |
