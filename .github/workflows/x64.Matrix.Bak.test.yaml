@@ -176,12 +176,6 @@ jobs:
           pattern: Renamed-*
           path: ./renamed
 
-      - name: Download build duration artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-duration
-          path: ./duration
-
       - name: Gather and export all version info
         run: |
           find ./versions -name "*.version.txt" | sort | xargs cat > version_body.txt
