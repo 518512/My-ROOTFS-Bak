@@ -28,14 +28,17 @@ jobs:
             branch: openwrt-24.10
             config: OpenWRT/v23.arm64.mini.config
             version: "24.10"
+            platform-version: "Arm 24.10"
           - name: openwrt23
             branch: openwrt-23.05
             config: OpenWRT/v23.arm64.mini.config
             version: "23.05"
+            platform-version: "Arm 23.05"
           - name: openwrt22
             branch: openwrt-22.03
             config: OpenWRT/v22.arm64.mini.config
             version: "22.03"
+            platform-version: "Arm 22.03"
 
     steps:
       - name: Checkout source
@@ -81,7 +84,7 @@ jobs:
 
       - name: 📦 TG 通知 - 开始构建
         run: |
-          curl -s "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=🚧 开始构建: ${{ matrix.target.version }}" >/dev/null
+          curl -s "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=🚧 开始构建: ${{ matrix.target.platform-version }}" >/dev/null
 
       - name: Compile firmware
         id: compile
@@ -93,7 +96,7 @@ jobs:
       - name: 📦 TG 通知 - 构建完成
         if: steps.compile.outputs.status == 'success'
         run: |
-          curl -s "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=✅ 构建完成: ${{ matrix.target.version }}" >/dev/null
+          curl -s "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=✅ 构建完成: ${{ matrix.target.platform-version }}" >/dev/null
 
       - name: Rename and copy firmware for main release
         if: steps.compile.outputs.status == 'success'
