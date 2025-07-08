@@ -1,4 +1,4 @@
-name: OpenWrt arm Matrix 2-Release
+name: OpenWrt Arm Matrix 2-Release
 permissions: write-all
 
 on:
